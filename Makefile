@@ -1,4 +1,4 @@
-CC=nvcc
+CC=gcc
 SRC=main.cu src/helpers.o src/cpuModel.o
 FLAGS=-lm
 
