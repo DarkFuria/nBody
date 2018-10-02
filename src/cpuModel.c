@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <math.h>
 
-// TODO: change name(something like gravitational parameter)
 double** prepareGravitationalParameters(double * mass){
     if(mass == NULL){
         fprintf(stderr, "ERROR: mass array is NULL\n");
@@ -108,10 +107,10 @@ void updateCoordinates(double * coord, double * speed, const double ** gravitati
     free(alt);
 };
 
-void updateFrame(frame * fr, const double** masses){
-    updateCoordinates(fr->x, fr->vx, masses, fr->masses);
-    updateCoordinates(fr->y, fr->vy, masses, fr->masses);
-    updateCoordinates(fr->z, fr->vz, masses, fr->masses);
+void updateFrame(frame * fr, const double** gravitationalParameters){
+    updateCoordinates(fr->x, fr->vx, gravitationalParameters, fr->masses);
+    updateCoordinates(fr->y, fr->vy, gravitationalParameters, fr->masses);
+    updateCoordinates(fr->z, fr->vz, gravitationalParameters, fr->masses);
 };
 
 void freeSquareMatrix(double ** matrix){

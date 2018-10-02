@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cuda_runtime.h>
 #include "settings.h"
 
 void * protectedMallocF(char const* arrName, unsigned int size){
@@ -40,13 +41,13 @@ frame * readFrame(char const* frameName){
     for(int i = 0; i < N_BODYS; i++){
         if(fscanf(inp, "%lf %lf %lf %lf %lf %lf %lf\n",&tmp->masses[i], &tmp->x[i], &tmp->y[i], &tmp->z[i], &tmp->vx[i], &tmp->vy[i], &tmp->vz[i]) != 7) {
             fprintf(stderr, "ERROR: Can't read file %s\n", frameName);
-            free(fr->masses);
-            free(fr->x);
-            free(fr->y);
-            free(fr->z);
-            free(fr->vx);
-            free(fr->vy);
-            free(fr->vz);
+            free(tmp->masses);
+            free(tmp->x);
+            free(tmp->y);
+            free(tmp->z);
+            free(tmp->vx);
+            free(tmp->vy);
+            free(tmp->vz);
             fclose(inp);
             exit(1);
         };
@@ -103,4 +104,30 @@ void freeFrame(frame* fr){
     free(fr->vx);
     free(fr->vy);
     free(fr->vz);
+};
+
+void checkCudaErrors(char const* errMsg){
+	cudaError_t err = cudaGetLastError();
+	if(err != cudaSuccess){
+		fprintf(stderr, "Error: %s\n", cudaGetErrorString(err));
+		fprintf(stderr, "%s\n", errMsg);
+		exit(1);
+	};
+};
+
+double* cudaProtectedMalloc(char const* arrName, unsigned int size){
+	void * tmp;
+	cudaMalloc(&tmp, size);
+	checkCudaErrors(arrName);
+	return tmp;
+};
+
+void cudaProtectedMemcpyD(char const* errMsg, double * devPtr, double * hostPtr, unsigned int size){
+	cudaMemcpy(devPtr, hostPtr, size, cudaMemcpyHostToDevice);
+	checkCudaErrors(errMsg);
+};
+
+void cudaProtectedMemcpyH(char const* errMsg, double * hostPtr, double * devPtr, unsigned int size){
+	cudaMemcpy(hostPtr, devPtr, size, cudaMemcpyDeviceToHost);
+	checkCudaErrors(errMsg);
 };
