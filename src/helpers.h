@@ -12,6 +12,13 @@ typedef struct{
     double * vx;
     double * vy;
     double * vz;
+    double * devMasses;
+    double * devX;
+    double * devY;
+    double * devZ;
+    double * devVx;
+    double * devVy;
+    double * devVz;
 } frame;
 
 // function reads frame from csv file
@@ -32,5 +39,17 @@ void printSquareMatrix(const double ** matrix);
 
 // function free's frame
 void freeFrame(frame* fr);
+
+// function checks and prints cuda runtime errors
+void checkCudaErrors(char const* errMsg);
+
+// allocated array on device and processes errors 
+double* cudaProtectedMalloc(char const* arrName, unsigned int size);
+
+// copys array on device and processes errors 
+void cudaProtectedMemcpyD(char const* errMsg, double * devPtr, double * hostPtr, unsigned int size);
+
+// copys array from device and processes errors 
+void cudaProtectedMemcpyH(char const* errMsg, double * hostPtr, double * devPtr, unsigned int size);
 
 #endif

@@ -26,7 +26,7 @@ void integrate(double * x, double * dx);
 void updateCoordinates(double * coord, double * speed, const double ** gravitationalParameters, double * masses);
 
 // updates frame
-void updateFrame(frame * fr, const double** masses);
+void updateFrame(frame * fr, const double** gravitationalParameters);
 
 // frees created matrix
 void freeSquareMatrix(double ** matrix);
