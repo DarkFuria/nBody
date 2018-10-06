@@ -1,14 +1,24 @@
 #ifndef GPU_MODEL_CUH
 #define GPU_MODEL_CUH
 extern "C"{
-#include "helpers.h"
+	#include "helpers.h"
 }
 
 typedef struct {
-	double* dist;
-	double* interactions;
-	double* TF;
-	double* alters;
+	double * distX;
+	double * distY;
+	double * distZ;
+	double * len;
+	double * interX;
+	double * interY;
+	double * interZ;
+	double * interTotal;
+	double * TFX;
+	double * TFY;
+	double * TFZ;
+	double * altX;
+	double * altY;
+	double * altZ;
 } tempData;
 
 // creates temporary data structure 
@@ -21,10 +31,10 @@ void freeTempData(tempData* td);
 __global__ void gpu_prepareGravitationalParameters(double* __restrict__ gravitationalParameters, const double* __restrict__ masses);
 
 // calculates distance between all points int projection on the one axis
-__global__ void gpu_calculateDistArray(double* __restrict__ dist, double* __restrict__ coordinates);
+__global__ void gpu_calculateDistArray(const double *x, const double *y, const double *z, double *distX, double *distY, double *distZ, double *len);
 
 // calculates interactions using Gravitation Law
-__global__ void gpu_calculateInteraction(double * __restrict__ forces, const double * __restrict__ gravitationalParameters, const double * __restrict__ dist);
+__global__ void gpu_calculateInteraction(double * __restrict__ fx, double * fy, double * fz, const double *__restrict__ gravitationalParameters, const double *distX, const double * distY, const double * distZ, const double * len);
 
 // calcilate vector sum of forces in projection on the axis
 __global__ void gpu_calculateTotalForces(double * __restrict__ totalForces, double * __restrict__ forces);

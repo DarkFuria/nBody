@@ -4,7 +4,6 @@
 #include "src/gpuModel.cuh"
 extern "C"{
     #include "src/helpers.h"
-    #include "src/cpuModel.h"
 }
 
 int main(int argc, char* argv[]){
@@ -65,7 +64,6 @@ int main(int argc, char* argv[]){
         cudaProtectedMemcpyH("X copy", test->x, test->devX, sizeof(double) *N_BODYS);
         cudaProtectedMemcpyH("Y copy", test->y, test->devY, sizeof(double) *N_BODYS);
         cudaProtectedMemcpyH("Z copy", test->z, test->devZ, sizeof(double) *N_BODYS);
-        
         
         
         if(sprintf(path, "out/out%06d.csv", i) != pathLen - 1){
