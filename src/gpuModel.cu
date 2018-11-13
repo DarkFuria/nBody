@@ -66,10 +66,11 @@ __global__ void gpu_calculateDistArray(const double *x, const double *y, const d
     if(threadID < N_BODYS * N_BODYS){
         int i = threadID % N_BODYS;
         int j = threadID / N_BODYS;
-        double dx = (fabs(x[j] - x[i]) < EPSILON) ? EPSILON : x[j] - x[i];
-        double dy = (fabs(y[j] - y[i]) < EPSILON) ? EPSILON : y[j] - y[i];
-        double dz = (fabs(z[j] - z[i]) < EPSILON) ? EPSILON : z[j] - z[i];
-        double l = sqrt(dx * dx + dy * dy + dz * dz);
+        double dx = x[j] - x[i];
+        double dy = y[j] - y[i];
+        double dz = z[j] - z[i];
+        double l =  sqrt(dx * dx + dy * dy + dz * dz);
+        l = (l < EPSILON) ? EPSILON : l;
         distX[threadID] = dx;
         distY[threadID] = dy;
         distZ[threadID] = dz;

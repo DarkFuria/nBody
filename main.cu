@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
     };
     
     frame* test = readFrame(argv[1]);
-    int pathLen = sizeof("out/out000000.csv");
+    int pathLen = sizeof("out/out00000000.csv");
     char path[pathLen];
     double * gravitationalParameters;
     
@@ -58,7 +58,9 @@ int main(int argc, char* argv[]){
     
     for(int i = 0; i < FRAMES_AMOUNT; i++){
         for(int j = 0; j < WRITE_STEP; j++){
-            gpu_updateFrame(test, gravitationalParameters, td);
+			for(int k = 0; k < 1000; k++){
+				gpu_updateFrame(test, gravitationalParameters, td);
+			};
         };
         
         cudaProtectedMemcpyH("X copy", test->x, test->devX, sizeof(double) *N_BODYS);
@@ -66,14 +68,14 @@ int main(int argc, char* argv[]){
         cudaProtectedMemcpyH("Z copy", test->z, test->devZ, sizeof(double) *N_BODYS);
         
         
-        if(sprintf(path, "out/out%06d.csv", i) != pathLen - 1){
+        if(sprintf(path, "out/out%08d.csv", i) != pathLen - 1){
             fprintf(stderr, "ERROR: Can't generate filename\n");
             fprintf(stderr, "PathLen: %d\n", pathLen);
             exit(1);
         };
         path[pathLen - 1] = '\0';
         writeFrameShort(path, test);
-        fprintf(stdout, "Frame#%05d created\n", i);
+        fprintf(stdout, "Frame#%08d created\n", i);
     };
     
     cudaProtectedMemcpyH("vX copy", test->vx, test->devVx, sizeof(double) *N_BODYS);
