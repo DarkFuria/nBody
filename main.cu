@@ -7,16 +7,25 @@ extern "C"{
 }
 
 int main(int argc, char* argv[]){
-    if(argc != 4){
-        fprintf(stderr, "Usage: ./nbody cat.csv framesAmount writeRate\n");
+    int startID = 0;
+    int writeBackups = 1;
+    if(argc < 3){
+        fprintf(stderr, "Usage: ./nbody cat.csv framesAmount writeRate [writeBackups = 1] [startID]\n");
         exit(1);
+    } else if (argc == 5){
+        writeBackups = atoi(argv[4]);
+    } else if (argc == 6){
+        writeBackups = atoi(argv[4]);
+        startID = atoi(argv[5]);
     };
     
     frame* test = readFrame(argv[1]);
     int pathLen = sizeof("out/out00000000.csv");
     char path[pathLen];
-    double * gravitationalParameters;
     
+    // for backups
+    int backupPathLen = sizeof("backup/back00000000.csv");
+    char backupPath[backupPathLen];
     
     int FRAMES_AMOUNT = atoi(argv[2]);
     if(FRAMES_AMOUNT < 1){
@@ -29,43 +38,21 @@ int main(int argc, char* argv[]){
         exit(1);
     };
     
-    test->devMasses = cudaProtectedMalloc("massesGP", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("massesGP", test->devMasses, test->masses, sizeof(double) * N_BODYS);
+    test->devBodys = (float4*)cudaProtectedMalloc("devBodys", sizeof(float4) * N_BODYS);
+    cudaProtectedMemcpyD("devBodys copy", test->devBodys, test->bodys, sizeof(float4) * N_BODYS);
     
-    test->devX = cudaProtectedMalloc("devX", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devX", test->devX, test->x, sizeof(double) * N_BODYS);
+    test->devVels = (float3*)cudaProtectedMalloc("devVels", sizeof(float3) * N_BODYS);
+    cudaProtectedMemcpyD("devVels copy", test->devVels, test->vels, sizeof(float3) * N_BODYS);
     
-    test->devY = cudaProtectedMalloc("devY", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devY", test->devY, test->y, sizeof(double) * N_BODYS);
+    test->devAccels = (float4*)cudaProtectedMalloc("devAccel", sizeof(float4) * N_BODYS);
     
-    test->devZ = cudaProtectedMalloc("devZ", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devZ", test->devZ, test->z, sizeof(double) * N_BODYS);
-    
-    test->devVx = cudaProtectedMalloc("devVx", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devVx", test->devVx, test->vx, sizeof(double) * N_BODYS);
-    
-    test->devVy = cudaProtectedMalloc("devVy", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devVy", test->devVy, test->vy, sizeof(double) * N_BODYS);
-    
-    test->devVz = cudaProtectedMalloc("devVz", sizeof(double) * N_BODYS);
-    cudaProtectedMemcpyD("devVz", test->devVz, test->vz, sizeof(double) * N_BODYS);
-    
-    gravitationalParameters = cudaProtectedMalloc("gravitationalParameters", sizeof(double) * N_BODYS * N_BODYS);
-    gpu_prepareGravitationalParameters<<<(N_BODYS * N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(gravitationalParameters, test->devMasses);
-    cudaDeviceSynchronize();
-    
-    tempData* td = createTempData();
-    
-    for(int i = 0; i < FRAMES_AMOUNT; i++){
+    for(int i = startID; i < startID + FRAMES_AMOUNT; i++){
         for(int j = 0; j < WRITE_STEP; j++){
-			for(int k = 0; k < 1000; k++){
-				gpu_updateFrame(test, gravitationalParameters, td);
-			};
+				calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels);
+				updateCoordinates<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
         };
         
-        cudaProtectedMemcpyH("X copy", test->x, test->devX, sizeof(double) *N_BODYS);
-        cudaProtectedMemcpyH("Y copy", test->y, test->devY, sizeof(double) *N_BODYS);
-        cudaProtectedMemcpyH("Z copy", test->z, test->devZ, sizeof(double) *N_BODYS);
+        cudaProtectedMemcpyH("bodys copy", test->bodys, test->devBodys, sizeof(float4) *N_BODYS);
         
         
         if(sprintf(path, "out/out%08d.csv", i) != pathLen - 1){
@@ -75,25 +62,32 @@ int main(int argc, char* argv[]){
         };
         path[pathLen - 1] = '\0';
         writeFrameShort(path, test);
-        fprintf(stdout, "Frame#%08d created\n", i);
+
+        if(i % (FRAMES_AMOUNT / 100) == 0){
+            fprintf(stdout, "%d frames out of %d done\n", i+1 - startID, FRAMES_AMOUNT);
+        };
+
+        if(i % (FRAMES_AMOUNT / 100) == 0 && writeBackups){
+            if(sprintf(backupPath, "backup/back%08d.csv", i) != backupPathLen- 1){
+                fprintf(stderr, "ERROR: Can't generate filename\n");
+                fprintf(stderr, "PathLen: %d\n", pathLen);
+                exit(1);
+            };
+            backupPath[backupPathLen - 1] = '\0';
+            cudaProtectedMemcpyH("Backup: vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
+            writeFrameFull(backupPath, test);
+
+        };
     };
     
-    cudaProtectedMemcpyH("vX copy", test->vx, test->devVx, sizeof(double) *N_BODYS);
-    cudaProtectedMemcpyH("vY copy", test->vy, test->devVy, sizeof(double) *N_BODYS);
-    cudaProtectedMemcpyH("vZ copy", test->vz, test->devVz, sizeof(double) *N_BODYS);
+    cudaProtectedMemcpyH("vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
     
     writeFrameFull("result.csv", test);
-   
-	freeTempData(td);
-	free(td);
-    cudaFree(gravitationalParameters);
-    cudaFree(test->devX);
-    cudaFree(test->devY);
-    cudaFree(test->devZ);
-    cudaFree(test->devVx);
-    cudaFree(test->devVy);
-    cudaFree(test->devVz);
-    cudaFree(test->devMasses);
+
+    fprintf(stdout, "DONE\n");
+
+    cudaFree(test->devBodys);
+    cudaFree(test->devVels);
     freeFrame(test);
     free(test);
     return 0;

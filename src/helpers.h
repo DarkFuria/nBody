@@ -4,27 +4,18 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#include <cuda_runtime.h>
+
 typedef struct{
-    double * masses;
-    double * x;
-    double * y;
-    double * z;
-    double * vx;
-    double * vy;
-    double * vz;
-    double * devMasses;
-    double * devX;
-    double * devY;
-    double * devZ;
-    double * devVx;
-    double * devVy;
-    double * devVz;
+    float4 * bodys;
+	float3 * vels;
+    float4 * devBodys;
+	float3 * devVels;
+	float4 * devAccels;
 } frame;
 
 // function reads frame from csv file
 frame * readFrame(char const* frameName);
-
-void * protectedMallocF(char const* arrName, unsigned int size);
 
 // function writes frame into csv file(with velocitys and masses)
 void writeFrameFull(char const* frameName, const frame* fr );
@@ -44,12 +35,12 @@ void freeFrame(frame* fr);
 void checkCudaErrors(char const* errMsg);
 
 // allocated array on device and processes errors 
-double* cudaProtectedMalloc(char const* arrName, unsigned int size);
+void* cudaProtectedMalloc(char const* arrName, unsigned int size);
 
 // copys array on device and processes errors 
-void cudaProtectedMemcpyD(char const* errMsg, double * devPtr, double * hostPtr, unsigned int size);
+void cudaProtectedMemcpyD(char const* errMsg, void * devPtr, void * hostPtr, unsigned int size);
 
 // copys array from device and processes errors 
-void cudaProtectedMemcpyH(char const* errMsg, double * hostPtr, double * devPtr, unsigned int size);
+void cudaProtectedMemcpyH(char const* errMsg, void * hostPtr, void * devPtr, unsigned int size);
 
 #endif
