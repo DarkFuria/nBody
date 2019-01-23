@@ -14,19 +14,19 @@ typedef struct{
 	float4 * devAccels;
 } frame;
 
+// prints info about program
+void printHelp();
+
 // function reads frame from csv file
-frame * readFrame(char const* frameName);
+frame * readFrame(char const* frameName, int N_BODYS);
 
 // function writes frame into csv file(with velocitys and masses)
-void writeFrameFull(char const* frameName, const frame* fr );
+void writeFrameFull(char const* frameName, const frame* fr, int N_BODYS);
 // fucntion writes only coordinates into file
-void writeFrameShort(char const* frameName, const frame* fr );
+void writeFrameShort(char const* frameName, const frame* fr, int N_BODYS);
 
 // finction prints frame
-void printFrame(frame const* fr);
-
-// finction prints square matrix
-void printSquareMatrix(const double ** matrix);
+void printFrame(frame const* fr, int N_BODYS);
 
 // function free's frame
 void freeFrame(frame* fr);

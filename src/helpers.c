@@ -5,7 +5,21 @@
 #include <cuda_runtime.h>
 #include "settings.h"
 
-frame * readFrame(char const* frameName){
+void printHelp(){
+    printf("This is GPU version of program for N-body simulation\n");
+    printf("Supported arguments :\n");
+    printf("\t-s sets the ID of first frame[optional]\n");
+    printf("\t-N sets bodys amount\n");
+    printf("\t-f sets frames amount\n");
+    printf("\t-w sets write step(frequency of file generation)\n");
+    printf("\t-t sets threads amount\n");
+    printf("\t-B runs program in bencmarking mode(deactivates processing progress && backups)[optional]\n");
+    printf("\t-b writes backups files[optional]\n");
+    printf("\t-c sets input catalogue name\n");
+    printf("\t-? or -h prints this help\n");
+};
+
+frame * readFrame(char const* frameName, int N_BODYS){
     FILE *inp;
     inp = fopen(frameName, "r");
     if(inp == NULL){
@@ -48,22 +62,13 @@ frame * readFrame(char const* frameName){
     return tmp;
 };
 
-void printFrame(frame const* fr){
+void printFrame(frame const* fr, int N_BODYS){
     for(int i = 0; i < N_BODYS; i++){
         fprintf(stdout, "%f %f %f %f %f %f\n", fr->bodys[i].x, fr->bodys[i].y, fr->bodys[i].z, fr->vels[i].x, fr->vels[i].y, fr->vels[i].z);
     };
 };
 
-void printSquareMatrix(const double ** matrix){
-    for(int i = 0; i < N_BODYS; i++){
-        for(int j = 0; j < N_BODYS; j++){
-            fprintf(stdout, "%15.2f", matrix[i][j]);
-        };
-        fprintf(stdout, "\n");
-    };
-};
-
-void writeFrameFull(char const* frameName,const frame* fr ){
+void writeFrameFull(char const* frameName,const frame* fr, int N_BODYS){
     FILE * out = fopen(frameName, "w");
     if(out == NULL){
         fprintf(stderr, "ERROR: Can't open file %s\n", frameName);
@@ -75,7 +80,7 @@ void writeFrameFull(char const* frameName,const frame* fr ){
     fclose(out);
 };
 
-void writeFrameShort(char const* frameName,const frame* fr ){
+void writeFrameShort(char const* frameName,const frame* fr, int N_BODYS){
     FILE * out = fopen(frameName, "w");
     if(out == NULL){
         fprintf(stderr, "ERROR: Can't open file %s\n", frameName);

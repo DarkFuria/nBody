@@ -37,14 +37,14 @@ __device__ float3 submatrixProcessing(float4 updatingBody, float3 bodyAccelerati
 };
 
 
-__global__ void calculateAccelerations(float4* bodys, float4* accels){
+__global__ void calculateAccelerations(float4* bodys, float4* accels, int N_BODYS){
 	extern __shared__ float4 shared[];
 	float4 body; // body for updating by this thread
 	float3 acceleration = {0.0f, 0.0f, 0.0f};
 	int threadID = blockIdx.x * blockDim.x + threadIdx.x;
 	body = bodys[threadID];
 	
-	for(int i = 0, tile = 0; i < N_BODYS; i+= THREADS_AMOUNT, tile++){
+	for(int i = 0, tile = 0; i < N_BODYS; i+= blockDim.x, tile++){
 		int idx = tile * blockDim.x + threadIdx.x;
 		shared[threadIdx.x] = bodys[idx];
 		__syncthreads();

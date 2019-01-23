@@ -1,9 +1,9 @@
 CC=nvcc
 SRC=main.cu src/helpers.o src/gpuModel.o
-FLAGS=-lm -arch=sm_61 --restrict -lineinfo
+FLAGS=-lm -arch=sm_61 -O0
 
 all: src/helpers.o src/gpuModel.o
-	$(CC) $(SRC) -o nbody -g $(FLAGS)
+	$(CC) $(SRC) -o nbody $(FLAGS)
 
 src/helpers.o: src/helpers.c
 	$(CC) -c src/helpers.c

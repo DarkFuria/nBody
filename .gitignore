@@ -6,3 +6,4 @@ nbody
 src/*.[o]
 catalogue*
 result*
+*.nvvp

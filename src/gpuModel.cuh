@@ -8,7 +8,7 @@ __device__ float3 calculateBodyBodyInteraction(float4 bodyI, float4 bodyJ, float
 
 __device__ float3 submatrixProcessing(float4 updatingBody, float3 bodyAcceleration);
 
-__global__ void calculateAccelerations(float4* bodys, float4* accels);
+__global__ void calculateAccelerations(float4* bodys, float4* accels, int N_BODYS);
 
 __global__ void updateCoordinates(float4* bodys, float3* vels, float4* accels, float dt);
 
