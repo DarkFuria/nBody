@@ -6,6 +6,7 @@
 #include <stdbool.h>
 extern "C"{
     #include "src/helpers.h"
+    #include "src/cpuModel.h"
 }
 
 int main(int argc, char* argv[]){
@@ -15,11 +16,12 @@ int main(int argc, char* argv[]){
     int WRITE_STEP = 0;
     bool benchmark = false;
     bool writeBackups = 0;
+    bool useGPU = false;
     char *catName = NULL;
     int THREADS_AMOUNT = 0;
 
     // supported options
-    const char *optString = "s:N:f:w:t:Bbc:h?";
+    const char *optString = "s:N:f:w:t:Bbc:Gh?";
     
     int opt = getopt(argc, argv, optString);
     while(opt != -1){
@@ -48,6 +50,9 @@ int main(int argc, char* argv[]){
             case 'c':
                 catName = optarg;
                 break;
+            case 'G':
+                useGPU = true;
+                break;
             case 'h':
             case '?':
                 printHelp();
@@ -68,7 +73,7 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "ERROR: Wrong writing frequency: %d\n", WRITE_STEP);
         return -1;
     };
-    if(THREADS_AMOUNT < 1){
+    if(THREADS_AMOUNT < 1 && useGPU){
         fprintf(stderr, "ERROR: Too small THREADS_AMOUNT: %d\n", THREADS_AMOUNT);
         return -1;
     };
@@ -82,22 +87,31 @@ int main(int argc, char* argv[]){
     int backupPathLen = sizeof("backup/back00000000.csv");
     char backupPath[backupPathLen];
     
-    
-    test->devBodys = (float4*)cudaProtectedMalloc("devBodys", sizeof(float4) * N_BODYS);
-    cudaProtectedMemcpyD("devBodys copy", test->devBodys, test->bodys, sizeof(float4) * N_BODYS);
-    
-    test->devVels = (float3*)cudaProtectedMalloc("devVels", sizeof(float3) * N_BODYS);
-    cudaProtectedMemcpyD("devVels copy", test->devVels, test->vels, sizeof(float3) * N_BODYS);
-    
-    test->devAccels = (float4*)cudaProtectedMalloc("devAccel", sizeof(float4) * N_BODYS);
-    
+    if(useGPU){
+        test->devBodys = (float4*)cudaProtectedMalloc("devBodys", sizeof(float4) * N_BODYS);
+        cudaProtectedMemcpyD("devBodys copy", test->devBodys, test->bodys, sizeof(float4) * N_BODYS);
+        
+        test->devVels = (float3*)cudaProtectedMalloc("devVels", sizeof(float3) * N_BODYS);
+        cudaProtectedMemcpyD("devVels copy", test->devVels, test->vels, sizeof(float3) * N_BODYS);
+        
+        test->devAccels = (float4*)cudaProtectedMalloc("devAccel", sizeof(float4) * N_BODYS);
+    } else {
+        test->accels = (float4*)malloc(sizeof(float4) * N_BODYS);
+    };
     for(int i = startID; i < startID + FRAMES_AMOUNT; i++){
         for(int j = 0; j < WRITE_STEP; j++){
-			calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
-			updateCoordinates<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
+            if(useGPU){
+			    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
+			    gpu_updateCoordinates<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
+            } else {
+                cpu_calculateAccelerations(test->bodys, test->accels, N_BODYS);
+                cpu_updateCoordinates(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+            };
         };
         
-        cudaProtectedMemcpyH("bodys copy", test->bodys, test->devBodys, sizeof(float4) *N_BODYS);
+        if(useGPU){
+            cudaProtectedMemcpyH("bodys copy", test->bodys, test->devBodys, sizeof(float4) * N_BODYS);
+        };
         
         
         if(sprintf(path, "out/out%08d.csv", i) != pathLen - 1){
@@ -127,7 +141,9 @@ int main(int argc, char* argv[]){
                     exit(1);
                 };
                 backupPath[backupPathLen - 1] = '\0';
-                cudaProtectedMemcpyH("Backup: vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
+                if(useGPU){
+                    cudaProtectedMemcpyH("Backup: vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
+                };
                 writeFrameFull(backupPath, test, N_BODYS);
 
             };
@@ -135,15 +151,23 @@ int main(int argc, char* argv[]){
         
     };
     
-    cudaProtectedMemcpyH("bodys copy", test->bodys, test->devBodys, sizeof(float4) *N_BODYS);
-    cudaProtectedMemcpyH("vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
+    if(useGPU){
+        cudaProtectedMemcpyH("bodys copy", test->bodys, test->devBodys, sizeof(float4) *N_BODYS);
+        cudaProtectedMemcpyH("vels copy", test->vels, test->devVels, sizeof(float3) *N_BODYS);
+    };
     
     writeFrameFull("result.csv", test, N_BODYS);
 
-    fprintf(stdout, "DONE\n");
+    if(!benchmark){
+        fprintf(stdout, "DONE\n");
+    };
 
-    cudaFree(test->devBodys);
-    cudaFree(test->devVels);
+    if(useGPU){
+        cudaFree(test->devBodys);
+        cudaFree(test->devVels);
+    } else {
+        free(test->accels);
+    };
     freeFrame(test);
     free(test);
     return 0;
