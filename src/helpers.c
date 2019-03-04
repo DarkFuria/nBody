@@ -1,12 +1,11 @@
 #include "helpers.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include "settings.h"
 
 void printHelp(){
-    printf("This is GPU version of program for N-body simulation\n");
+    printf("This is a program for N-body simulation\n");
     printf("Supported arguments :\n");
     printf("\t-s sets the ID of first frame[optional]\n");
     printf("\t-N sets bodys amount\n");
@@ -16,6 +15,7 @@ void printHelp(){
     printf("\t-B runs program in bencmarking mode(deactivates processing progress && backups)[optional]\n");
     printf("\t-b writes backups files[optional]\n");
     printf("\t-c sets input catalogue name\n");
+    printf("\t-G use GPU instead of CPU for calculations(better works for huge amount of bodys, such as 4096)[optional]\n");
     printf("\t-? or -h prints this help\n");
 };
 

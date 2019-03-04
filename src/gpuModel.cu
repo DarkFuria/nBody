@@ -6,7 +6,7 @@ extern "C"{
     #include <stdio.h>
 }
 
-__device__ float3 calculateBodyBodyInteraction(float4 bodyI, float4 bodyJ, float3 accel){
+__device__ float3 gpu_calculateBodyBodyInteraction(float4 bodyI, float4 bodyJ, float3 accel){
 	// calculating distances [8 FLOPS]
 	float4 dist;
 	dist.x = bodyJ.x - bodyI.x;
@@ -24,20 +24,20 @@ __device__ float3 calculateBodyBodyInteraction(float4 bodyI, float4 bodyJ, float
 	return accel;
 };
 
-__device__ float3 submatrixProcessing(float4 updatingBody, float3 bodyAcceleration){
+__device__ float3 gpu_submatrixProcessing(float4 updatingBody, float3 bodyAcceleration){
 	int i;
 	extern __shared__ float4 submatrix[];
 	for(i = 0; i < blockDim.x; i+=4){
-		bodyAcceleration = calculateBodyBodyInteraction(updatingBody, submatrix[i], bodyAcceleration);
-		bodyAcceleration = calculateBodyBodyInteraction(updatingBody, submatrix[i+1], bodyAcceleration);
-		bodyAcceleration = calculateBodyBodyInteraction(updatingBody, submatrix[i+2], bodyAcceleration);
-		bodyAcceleration = calculateBodyBodyInteraction(updatingBody, submatrix[i+3], bodyAcceleration);
+		bodyAcceleration = gpu_calculateBodyBodyInteraction(updatingBody, submatrix[i], bodyAcceleration);
+		bodyAcceleration = gpu_calculateBodyBodyInteraction(updatingBody, submatrix[i+1], bodyAcceleration);
+		bodyAcceleration = gpu_calculateBodyBodyInteraction(updatingBody, submatrix[i+2], bodyAcceleration);
+		bodyAcceleration = gpu_calculateBodyBodyInteraction(updatingBody, submatrix[i+3], bodyAcceleration);
 	};
 	return bodyAcceleration;
 };
 
 
-__global__ void calculateAccelerations(float4* bodys, float4* accels, int N_BODYS){
+__global__ void gpu_calculateAccelerations(float4* bodys, float4* accels, int N_BODYS){
 	extern __shared__ float4 shared[];
 	float4 body; // body for updating by this thread
 	float3 acceleration = {0.0f, 0.0f, 0.0f};
@@ -48,7 +48,7 @@ __global__ void calculateAccelerations(float4* bodys, float4* accels, int N_BODY
 		int idx = tile * blockDim.x + threadIdx.x;
 		shared[threadIdx.x] = bodys[idx];
 		__syncthreads();
-		acceleration = submatrixProcessing(body, acceleration);
+		acceleration = gpu_submatrixProcessing(body, acceleration);
 		__syncthreads();
 	};
 	
@@ -56,7 +56,7 @@ __global__ void calculateAccelerations(float4* bodys, float4* accels, int N_BODY
 	accels[threadID] = res;
 };
 
-__global__ void updateCoordinates(float4* bodys, float3* vels, float4* accels, float dt){
+__global__ void gpu_updateCoordinates(float4* bodys, float3* vels, float4* accels, float dt){
 	int threadID = blockDim.x *blockIdx.x + threadIdx.x;
 	float4 body = bodys[threadID];
 	float3 vel = vels[threadID];
