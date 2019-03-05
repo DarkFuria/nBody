@@ -14,6 +14,7 @@ int main(int argc, char* argv[]){
     int N_BODYS = 0;
     int FRAMES_AMOUNT = 0;
     int WRITE_STEP = 0;
+    int integratorType = 1;
     bool benchmark = false;
     bool writeBackups = 0;
     bool useGPU = false;
@@ -21,7 +22,7 @@ int main(int argc, char* argv[]){
     int THREADS_AMOUNT = 0;
 
     // supported options
-    const char *optString = "s:N:f:w:t:Bbc:Gh?";
+    const char *optString = "s:N:f:w:t:I:Bbc:Gh?";
     
     int opt = getopt(argc, argv, optString);
     while(opt != -1){
@@ -40,6 +41,9 @@ int main(int argc, char* argv[]){
                 break;
             case 't':
                 THREADS_AMOUNT = atoi(optarg);
+                break;
+            case 'I':
+                integratorType = atoi(optarg);
                 break;
             case 'B':
                 benchmark = true;
@@ -77,6 +81,9 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "ERROR: Too small THREADS_AMOUNT: %d\n", THREADS_AMOUNT);
         return -1;
     };
+    if(integratorType != 1 && integratorType != 2){
+        fprintf(stderr, "ERROR: Unsupported integrator: %d\n", integratorType);
+    };
 
 
     frame* test = readFrame(catName, N_BODYS);
@@ -91,7 +98,7 @@ int main(int argc, char* argv[]){
         test->devBodys = (float4*)cudaProtectedMalloc("devBodys", sizeof(float4) * N_BODYS);
         cudaProtectedMemcpyD("devBodys copy", test->devBodys, test->bodys, sizeof(float4) * N_BODYS);
         
-        test->devVels = (float3*)cudaProtectedMalloc("devVels", sizeof(float3) * N_BODYS);
+        test->devVels = (float4*)cudaProtectedMalloc("devVels", sizeof(float4) * N_BODYS);
         cudaProtectedMemcpyD("devVels copy", test->devVels, test->vels, sizeof(float3) * N_BODYS);
         
         test->devAccels = (float4*)cudaProtectedMalloc("devAccel", sizeof(float4) * N_BODYS);
@@ -101,11 +108,23 @@ int main(int argc, char* argv[]){
     for(int i = startID; i < startID + FRAMES_AMOUNT; i++){
         for(int j = 0; j < WRITE_STEP; j++){
             if(useGPU){
-			    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
-			    gpu_updateCoordinates<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
+                switch(integratorType){
+                    case 1:
+			            gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
+			            gpu_updateCoordinatesEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
+                        break;
+                    case 2:
+                        gpu_updateCoordinatesVelocityVerlet(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS, THREADS_AMOUNT);
+                };
             } else {
-                cpu_calculateAccelerations(test->bodys, test->accels, N_BODYS);
-                cpu_updateCoordinates(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+                switch(integratorType){
+                    case 1:
+                        cpu_calculateAccelerations(test->bodys, test->accels, N_BODYS);
+                        cpu_updateCoordinatesEuler(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+                        break;
+                    case 2:
+                        cpu_updateCoordinatesVelocityVerlet(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+                };
             };
         };
         

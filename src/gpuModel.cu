@@ -56,10 +56,10 @@ __global__ void gpu_calculateAccelerations(float4* bodys, float4* accels, int N_
 	accels[threadID] = res;
 };
 
-__global__ void gpu_updateCoordinates(float4* bodys, float3* vels, float4* accels, float dt){
+__global__ void gpu_updateCoordinatesEuler(float4* bodys, float4* vels, float4* accels, float dt){
 	int threadID = blockDim.x *blockIdx.x + threadIdx.x;
 	float4 body = bodys[threadID];
-	float3 vel = vels[threadID];
+	float4 vel = vels[threadID];
 	float4 acc = accels[threadID];
 	
 	// updating vel
@@ -76,4 +76,24 @@ __global__ void gpu_updateCoordinates(float4* bodys, float3* vels, float4* accel
 	bodys[threadID] = body;
 	vels[threadID] = vel;
 	
+};
+
+__global__ void gpu_integrateEuler(float4 *x, float4 *dx, float dt){
+    int threadID = blockDim.x * blockIdx.x + threadIdx.x;
+    float4 curX = x[threadID];
+    float4 curDx = dx[threadID];
+
+    curX.x += curDx.x * dt;
+    curX.y += curDx.y * dt;
+    curX.z += curDx.z * dt;
+
+    x[threadID] = curX;
+};
+
+void gpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS, int THREADS_AMOUNT){
+    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, dt / 2.0);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(coords, vels, dt);
+    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, dt / 2.0);
 };

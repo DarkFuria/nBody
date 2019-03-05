@@ -8,10 +8,10 @@
 
 typedef struct{
     float4 * bodys;
-	float3 * vels;
+	float4 * vels;
     float4 * accels;
     float4 * devBodys;
-	float3 * devVels;
+	float4 * devVels;
 	float4 * devAccels;
 } frame;
 

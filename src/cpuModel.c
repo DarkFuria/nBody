@@ -33,9 +33,9 @@ void cpu_calculateAccelerations(float4 * bodys, float4 *accels, int N_BODYS){
     };
 };
 
-void cpu_updateCoordinates(float4 * coords, float3 * vels, float4 * accels, float dt, int N_BODYS){
+void cpu_updateCoordinatesEuler(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS){
     for(int i = 0; i < N_BODYS; i++){
-        // updating velosity
+        // updating veloсity
         vels[i].x += accels[i].x * dt;
         vels[i].y += accels[i].y * dt;
         vels[i].z += accels[i].z * dt;
@@ -45,4 +45,20 @@ void cpu_updateCoordinates(float4 * coords, float3 * vels, float4 * accels, floa
         coords[i].y += vels[i].y * dt;
         coords[i].z += vels[i].z * dt;
     };  
+};
+
+void cpu_integrateEuler(float4 *x, float4 *dx, float dt, int N_BODYS){
+    for(int i = 0; i < N_BODYS; i++){
+        x[i].x += dx[i].x * dt;
+        x[i].y += dx[i].y * dt;
+        x[i].z += dx[i].z * dt;
+    };
+};
+
+void cpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS){
+    cpu_calculateAccelerations(coords, accels, N_BODYS);
+    cpu_integrateEuler(vels, accels, dt / 2.0, N_BODYS);
+    cpu_integrateEuler(coords, vels, dt, N_BODYS);
+    cpu_calculateAccelerations(coords, accels, N_BODYS);
+    cpu_integrateEuler(vels, accels, dt / 2.0, N_BODYS);
 };

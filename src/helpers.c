@@ -12,6 +12,7 @@ void printHelp(){
     printf("\t-f sets frames amount\n");
     printf("\t-w sets write step(frequency of file generation)\n");
     printf("\t-t sets threads amount\n");
+    printf("\t-I sets Integrator type(1 - Euler, 2 - velocity-Verlet)[optional, default=1]\n");
     printf("\t-B runs program in bencmarking mode(deactivates processing progress && backups)[optional]\n");
     printf("\t-b writes backups files[optional]\n");
     printf("\t-c sets input catalogue name\n");
@@ -40,7 +41,7 @@ frame * readFrame(char const* frameName, int N_BODYS){
 		exit(1);
 	};
 	
-	tmp->vels = malloc(sizeof(float3) * N_BODYS);
+	tmp->vels = malloc(sizeof(float4) * N_BODYS);
 	if(tmp->vels == NULL){
 		fprintf(stderr, "ERROR: Couldn't allocate memory for tmp->vels\n");
 		exit(1);
