@@ -62,3 +62,16 @@ void cpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 
     cpu_calculateAccelerations(coords, accels, N_BODYS);
     cpu_integrateEuler(vels, accels, dt / 2.0, N_BODYS);
 };
+
+void cpu_updateCoordinatesForestRuth(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS){
+    cpu_integrateEuler(coords, vels, FR_THETA * dt * 0.5f, N_BODYS);
+    cpu_calculateAccelerations(coords, accels, N_BODYS);
+    cpu_integrateEuler(vels, accels, FR_THETA * dt, N_BODYS);
+    cpu_integrateEuler(coords, vels, (1 - FR_THETA) * dt * 0.5f, N_BODYS);
+    cpu_calculateAccelerations(coords, accels, N_BODYS);
+    cpu_integrateEuler(vels, accels, (1 - 2.0f * FR_THETA) * dt, N_BODYS);
+    cpu_integrateEuler(coords, vels, (1 - FR_THETA) * dt * 0.5f, N_BODYS);
+    cpu_calculateAccelerations(coords, accels, N_BODYS);
+    cpu_integrateEuler(vels, accels, FR_THETA * dt, N_BODYS);
+    cpu_integrateEuler(coords, vels, FR_THETA * dt * 0.5f, N_BODYS);
+};

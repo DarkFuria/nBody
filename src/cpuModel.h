@@ -11,4 +11,6 @@ void cpu_integrateEuler(float4 *x, float4 *dx, float dt, int N_BODYS);
 
 void cpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS);
 
+void cpu_updateCoordinatesForestRuth(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS);
+
 #endif

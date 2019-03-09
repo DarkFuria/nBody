@@ -15,5 +15,6 @@ __global__ void gpu_updateCoordinatesEuler(float4* bodys, float4* vels, float4* 
 __global__ void gpu_integrateEuler(float4 *x, float4 *dx, float dt);
 
 void gpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS, int THREADS_AMOUNT);
+void gpu_updateCoordinatesForestRuth(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS, int THREADS_AMOUNT);
 
 #endif

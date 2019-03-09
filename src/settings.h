@@ -4,3 +4,7 @@
 // CONSTANTS
 #define G 6.67e-11
 #define EPSILON 1e6 // helps to avoid singularity
+
+
+// Forest-Ruth algorithm constant
+#define FR_THETA 1.3512071919

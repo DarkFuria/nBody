@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "ERROR: Too small THREADS_AMOUNT: %d\n", THREADS_AMOUNT);
         return -1;
     };
-    if(integratorType != 1 && integratorType != 2){
+    if(integratorType != 1 && integratorType != 2 && integratorType != 4){
         fprintf(stderr, "ERROR: Unsupported integrator: %d\n", integratorType);
     };
 
@@ -115,6 +115,8 @@ int main(int argc, char* argv[]){
                         break;
                     case 2:
                         gpu_updateCoordinatesVelocityVerlet(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS, THREADS_AMOUNT);
+                        break;
+
                 };
             } else {
                 switch(integratorType){
@@ -124,6 +126,10 @@ int main(int argc, char* argv[]){
                         break;
                     case 2:
                         cpu_updateCoordinatesVelocityVerlet(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+                        break;
+                    case 4:
+                        cpu_updateCoordinatesForestRuth(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
+                        break;
                 };
             };
         };

@@ -97,3 +97,16 @@ void gpu_updateCoordinatesVelocityVerlet(float4 * coords, float4 * vels, float4 
     gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
     gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, dt / 2.0);
 };
+
+void gpu_updateCoordinatesForestRuth(float4 * coords, float4 * vels, float4 * accels, float dt, int N_BODYS, int THREADS_AMOUNT){
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(coords, vels, FR_THETA * dt * 0.5f);
+    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, FR_THETA * dt);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(coords, vels, (1 - FR_THETA) * dt * 0.5f);
+    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, (1 - 2.0f * FR_THETA) * dt);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(coords, vels, (1 - FR_THETA) * dt * 0.5f);
+    gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(coords, accels, N_BODYS);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(vels, accels, FR_THETA * dt);
+    gpu_integrateEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(coords, vels, FR_THETA * dt * 0.5f);
+};
