@@ -96,6 +96,13 @@ void writeFrameShort(char const* frameName,const frame* fr, int N_BODYS){
 void freeFrame(frame* fr){
 	free(fr->bodys);
 	free(fr->vels);
+    if(fr->devBodys != NULL){
+        cudaFree(fr->devBodys);
+        cudaFree(fr->devVels);
+        cudaFree(fr->devAccels);
+    } else {
+        free(fr->accels);
+    };
 };
 
 void checkCudaErrors(char const* errMsg){

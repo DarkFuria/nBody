@@ -8,3 +8,10 @@
 
 // Forest-Ruth algorithm constant
 #define FR_THETA 1.3512071919
+
+
+enum INTEGRATOR_TYPE {
+    EULER = 1,
+    VELOCITYVERLET = 2,
+    FORESTRUTH = 3
+};

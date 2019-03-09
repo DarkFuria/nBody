@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
     int N_BODYS = 0;
     int FRAMES_AMOUNT = 0;
     int WRITE_STEP = 0;
-    int integratorType = 1;
+    enum INTEGRATOR_TYPE integratorType = EULER;
     bool benchmark = false;
     bool writeBackups = 0;
     bool useGPU = false;
@@ -43,7 +43,11 @@ int main(int argc, char* argv[]){
                 THREADS_AMOUNT = atoi(optarg);
                 break;
             case 'I':
-                integratorType = atoi(optarg);
+                if(atoi(optarg) == VELOCITYVERLET){
+                    integratorType = VELOCITYVERLET;
+                } else if(atoi(optarg) == FORESTRUTH){
+                    integratorType = FORESTRUTH;
+                };
                 break;
             case 'B':
                 benchmark = true;
@@ -81,12 +85,15 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "ERROR: Too small THREADS_AMOUNT: %d\n", THREADS_AMOUNT);
         return -1;
     };
-    if(integratorType != 1 && integratorType != 2 && integratorType != 4){
+    if(integratorType != EULER && integratorType != VELOCITYVERLET && integratorType != FORESTRUTH){
         fprintf(stderr, "ERROR: Unsupported integrator: %d\n", integratorType);
     };
 
 
     frame* test = readFrame(catName, N_BODYS);
+    test->devBodys = NULL;
+    test->devVels = NULL;
+    test->devAccels = NULL;
     int pathLen = sizeof("out/out00000000.csv");
     char path[pathLen];
     
@@ -109,25 +116,28 @@ int main(int argc, char* argv[]){
         for(int j = 0; j < WRITE_STEP; j++){
             if(useGPU){
                 switch(integratorType){
-                    case 1:
+                    case EULER:
 			            gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
 			            gpu_updateCoordinatesEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
                         break;
-                    case 2:
+                    case VELOCITYVERLET:
                         gpu_updateCoordinatesVelocityVerlet(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS, THREADS_AMOUNT);
+                        break;
+                    case FORESTRUTH:
+                        gpu_updateCoordinatesForestRuth(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS, THREADS_AMOUNT);
                         break;
 
                 };
             } else {
                 switch(integratorType){
-                    case 1:
+                    case EULER:
                         cpu_calculateAccelerations(test->bodys, test->accels, N_BODYS);
                         cpu_updateCoordinatesEuler(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
                         break;
-                    case 2:
+                    case VELOCITYVERLET:
                         cpu_updateCoordinatesVelocityVerlet(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
                         break;
-                    case 4:
+                    case FORESTRUTH:
                         cpu_updateCoordinatesForestRuth(test->bodys, test->vels, test->accels, DELTA_T, N_BODYS);
                         break;
                 };
@@ -185,13 +195,6 @@ int main(int argc, char* argv[]){
 
     if(!benchmark){
         fprintf(stdout, "DONE\n");
-    };
-
-    if(useGPU){
-        cudaFree(test->devBodys);
-        cudaFree(test->devVels);
-    } else {
-        free(test->accels);
     };
     freeFrame(test);
     free(test);
