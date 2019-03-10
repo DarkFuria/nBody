@@ -20,6 +20,19 @@ void printHelp(){
     printf("\t-? or -h prints this help\n");
 };
 
+void *protectedMalloc(char const* arrName, size_t size){
+    if(size < 1){
+        fprintf(stderr, "ERROR: Too small memory amount for array %s\n", arrName);
+        exit(1);
+    };
+    void *ptr = malloc(size);
+    if(ptr == NULL){
+        fprintf(stderr, "ERROR: Couldn't allocate memory for %s\n", arrName);
+        exit(1);
+    };
+    return ptr;
+};
+
 frame * readFrame(char const* frameName, int N_BODYS){
     FILE *inp;
     inp = fopen(frameName, "r");
@@ -28,25 +41,9 @@ frame * readFrame(char const* frameName, int N_BODYS){
         exit(1);
     };
     
-    frame *tmp = malloc(sizeof(frame));
-    if(tmp == NULL){
-        fprintf(stderr, "ERROR: Couldnt allocate memory for new frame\n");
-        fclose(inp);
-        exit(1);
-    };
-    
-	tmp->bodys = malloc(sizeof(float4) * N_BODYS);
-	if(tmp->bodys == NULL){
-		fprintf(stderr, "ERROR: Couldn't allocate memory for tmp->bodys\n");
-		exit(1);
-	};
-	
-	tmp->vels = malloc(sizeof(float4) * N_BODYS);
-	if(tmp->vels == NULL){
-		fprintf(stderr, "ERROR: Couldn't allocate memory for tmp->vels\n");
-		exit(1);
-	};
-                    
+    frame *tmp = (frame*)protectedMalloc("tmp frame", sizeof(frame));  
+	tmp->bodys = (float4*)protectedMalloc("tmp frame bodys", sizeof(float4) * N_BODYS);
+	tmp->vels = (float4*)protectedMalloc("tmp frame vels", sizeof(float4) * N_BODYS);                 
                     
     for(int i = 0; i < N_BODYS; i++){
         if(fscanf(inp, "%E %E %E %E %E %E %E",&tmp->bodys[i].w, &tmp->bodys[i].x, &tmp->bodys[i].y, &tmp->bodys[i].z, &tmp->vels[i].x, &tmp->vels[i].y, &tmp->vels[i].z) != 7) {

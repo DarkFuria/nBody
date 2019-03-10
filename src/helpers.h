@@ -18,6 +18,9 @@ typedef struct{
 // prints info about program
 void printHelp();
 
+// allocates memory with all needed checks
+void *protectedMalloc(char const* arrName, size_t size);
+
 // function reads frame from csv file
 frame * readFrame(char const* frameName, int N_BODYS);
 

@@ -110,8 +110,10 @@ int main(int argc, char* argv[]){
         
         test->devAccels = (float4*)cudaProtectedMalloc("devAccel", sizeof(float4) * N_BODYS);
     } else {
-        test->accels = (float4*)malloc(sizeof(float4) * N_BODYS);
+        test->accels = (float4*)protectedMalloc("accels", sizeof(float4) * N_BODYS);
     };
+
+    
     for(int i = startID; i < startID + FRAMES_AMOUNT; i++){
         for(int j = 0; j < WRITE_STEP; j++){
             if(useGPU){
