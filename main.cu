@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
                 switch(integratorType){
                     case EULER:
 			            gpu_calculateAccelerations<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT, sizeof(float4) * THREADS_AMOUNT>>>(test->devBodys, test->devAccels, N_BODYS);
-			            gpu_updateCoordinatesEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T);
+			            gpu_updateCoordinatesEuler<<<(N_BODYS + THREADS_AMOUNT - 1) / THREADS_AMOUNT, THREADS_AMOUNT>>>(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS);
                         break;
                     case VELOCITYVERLET:
                         gpu_updateCoordinatesVelocityVerlet(test->devBodys, test->devVels, test->devAccels, DELTA_T, N_BODYS, THREADS_AMOUNT);
